@@ -12,6 +12,8 @@ dependencies:
   flutter:
     sdk: flutter
 
+  sounds: 1.0.0-beta13
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
