@@ -1,5 +1,5 @@
 name: farw_example
-description: A new Flutter project.
+description: A farw example application.
 
 # The following line prevents the package from being accidentally published to
 # pub.dev using `pub publish`. This is preferred for private packages.
@@ -24,10 +24,20 @@ dependencies:
   flutter:
     sdk: flutter
 
+  flutter_audio_recorder_widget:
+    path: ../
 
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.0
+  # LGPL 3.0
+  sounds: 1.0.0-beta13
+
+  # BSD
+  path_provider: ^1.6.5
+
+  # BSD
+  path: 1.7.0
+
+  permission_handler: 5.0.1+1
+
 
 dev_dependencies:
   flutter_test:

@@ -1,5 +1,5 @@
 name: flutter_audio_recorder_widget
-description: A new Flutter package project.
+description: A simple widget to help recording audio, playing it back and persist it.
 version: 0.0.1
 author:
 homepage:
@@ -12,7 +12,22 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # LGPL 3.0
   sounds: 1.0.0-beta13
+
+  # MIT
+  after_layout: ^1.0.7+2
+
+  # MIT
+  material_design_icons_flutter: ^4.0.5345
+
+  # BSD
+  intl: 0.16.1
+
+  # BSD
+  path: 1.7.0
+
+
 
 dev_dependencies:
   flutter_test:
