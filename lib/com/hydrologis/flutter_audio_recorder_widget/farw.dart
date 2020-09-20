@@ -162,7 +162,7 @@ class _AudioRecorderViewState extends State<AudioRecorderView>
         children: [
           FlatButton(
             child: Icon(
-              MdiIcons.recordRec,
+              MdiIcons.stopCircle,
               size: size / 2,
               color: Colors.red,
             ),
