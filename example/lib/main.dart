@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_audio_recorder_widget/flutter_audio_recorder_widget.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:sounds/sounds.dart';
 
 void main() {
   runApp(MyApp());
@@ -65,6 +66,7 @@ class _MainViewState extends State<MainView> {
   }
 }
 
+/// An example audio handler that reads and writes samples to a given folder.
 class DemoAudioHandler extends AudioHandler {
   @override
   Future<List<AudioInfo>> getAudioList() async {
@@ -90,6 +92,8 @@ class DemoAudioHandler extends AudioHandler {
   }
 }
 
+/// List supported audio files in the given [parentPath].
+/// The returned format is a list of [name, path].
 List<List<String>> listAudioFiles(String parentPath) {
   List<List<String>> nameAndPathList = [];
 
@@ -104,25 +108,19 @@ List<List<String>> listAudioFiles(String parentPath) {
           continue;
         }
         if (filename.endsWith(ActiveMediaFormat().mediaFormat.extension)) {
-          var fileSize = File(path).lengthSync();
-          if (fileSize == 0) {
-            // remove zero length leftover recordings
-            File(path).deleteSync();
-          } else {
-            nameAndPathList.add([filename, path]);
-          }
+          nameAndPathList.add([filename, path]);
         }
       }
     }
+
+    nameAndPathList.sort((o1, o2) {
+      String n1 = o1[1];
+      String n2 = o2[1];
+      return n1.compareTo(n2);
+    });
   } catch (e) {
     print(e);
   }
-
-  nameAndPathList.sort((o1, o2) {
-    String n1 = o1[1];
-    String n2 = o2[1];
-    return n1.compareTo(n2);
-  });
 
   return nameAndPathList;
 }
