@@ -1,10 +1,9 @@
 import 'dart:io';
 
-import 'package:farw_example/com/hydrologis/flutter_audio_recorder_widget_demo/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_audio_recorder_widget/flutter_audio_recorder_widget.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 void main() {
   runApp(MyApp());
@@ -37,23 +36,26 @@ class _MainViewState extends State<MainView> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: requestPermissions(context),
+    return FutureBuilder<bool>(
+      future: requestMicPermissions(context),
       initialData: false,
-      builder: (BuildContext context, AsyncSnapshot snapshot) {
+      builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
         if (snapshot.data) {
           return AudioRecorderView(_audioHandler);
         } else {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                CircularProgressIndicator(),
-                SizedBox(
-                  height: 10,
-                ),
-                Text("Checking permission..."),
-              ],
+          return Container(
+            color: Colors.white,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  CircularProgressIndicator(),
+                  // SizedBox(
+                  //   height: 10,
+                  // ),
+                  // Text("Checking permission..."),
+                ],
+              ),
             ),
           );
           ;
@@ -73,7 +75,8 @@ class DemoAudioHandler extends AudioHandler {
         AudioInfo()
           ..id = i + 1
           ..duration = -1
-          ..name = audioFiles[i],
+          ..name = audioFiles[i][0]
+          ..path = audioFiles[i][1],
       );
     }
 
@@ -87,32 +90,39 @@ class DemoAudioHandler extends AudioHandler {
   }
 }
 
-List<String> listAudioFiles(String parentPath) {
-  List<String> names = [];
+List<List<String>> listAudioFiles(String parentPath) {
+  List<List<String>> nameAndPathList = [];
 
   try {
     var list = Directory(parentPath).listSync();
     for (var fse in list) {
       String path = fse.path;
-      String filename = p.basename(path);
-      if (filename.startsWith(".")) {
-        continue;
-      }
       var isDirectory = FileSystemEntity.isDirectorySync(path);
-      if (!isDirectory &&
-          filename.endsWith(ActiveMediaFormat().mediaFormat.extension)) {
-        names.add(filename);
+      if (!isDirectory) {
+        String filename = p.basename(path);
+        if (filename.startsWith(".")) {
+          continue;
+        }
+        if (filename.endsWith(ActiveMediaFormat().mediaFormat.extension)) {
+          var fileSize = File(path).lengthSync();
+          if (fileSize == 0) {
+            // remove zero length leftover recordings
+            File(path).deleteSync();
+          } else {
+            nameAndPathList.add([filename, path]);
+          }
+        }
       }
     }
   } catch (e) {
     print(e);
   }
 
-  names.sort((o1, o2) {
+  nameAndPathList.sort((o1, o2) {
     String n1 = o1[1];
     String n2 = o2[1];
     return n1.compareTo(n2);
   });
 
-  return names;
+  return nameAndPathList;
 }

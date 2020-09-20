@@ -2,7 +2,6 @@ name: flutter_audio_recorder_widget
 description: A simple widget to help recording audio, playing it back and persist it.
 version: 0.0.1
 author:
-homepage:
 
 environment:
   sdk: ">=2.7.0 <3.0.0"
@@ -13,7 +12,7 @@ dependencies:
     sdk: flutter
 
   # LGPL 3.0
-  sounds: 1.0.0-beta13
+  sounds: ^0.9.3
 
   # MIT
   after_layout: ^1.0.7+2
@@ -26,6 +25,8 @@ dependencies:
 
   # BSD
   path: 1.7.0
+
+  permission_handler: 5.0.1+1
 
 
 

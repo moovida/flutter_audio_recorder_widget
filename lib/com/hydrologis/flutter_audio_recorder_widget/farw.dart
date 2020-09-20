@@ -8,6 +8,11 @@ class AudioInfo {
   /// A label for the audio resource.
   String name;
 
+  /// If filebased, the path to the resource.
+  ///
+  /// Could be null if the audio is saved to database.
+  String path;
+
   /// The duration of the audio in seconds.
   int duration;
 }
@@ -65,19 +70,26 @@ class _AudioRecorderViewState extends State<AudioRecorderView>
   List<AudioInfo> _audioList;
   String errorMessage;
   bool _isRecording = false;
+  String newRecordingName;
+  String outputFolder;
 
   _AudioRecorderViewState(this.audioHandler);
 
   @override
   Future<void> afterFirstLayout(BuildContext context) async {
+    // initialize the audio recording system and set the media format.
     await RecorderState().init();
     ActiveMediaFormat().recorderModule = RecorderState().recorderModule;
-    await ActiveMediaFormat().setMediaFormat(
-        withShadeUI: false, mediaFormat: WellKnownMediaFormats.oggVorbis);
+    await ActiveMediaFormat()
+        .setMediaFormat(withShadeUI: false, mediaFormat: AdtsAacMediaFormat());
+
+    // get the output folder, to which all samples will be saved
+    outputFolder = await audioHandler.getOutputFolder();
 
     await loadExistingAudio();
   }
 
+  /// Load existing audio samples from the filesystem ([audioHandler.getOutputFolder()] is used)
   Future loadExistingAudio() async {
     try {
       _audioList = await audioHandler.getAudioList();
@@ -99,34 +111,13 @@ class _AudioRecorderViewState extends State<AudioRecorderView>
       bodyWidget = getErrorWidget(errorMessage);
     } else {
       if (_isRecording) {
-        var size = math.min(MediaQuery.of(context).size.width,
-            MediaQuery.of(context).size.height);
-        bodyWidget = Center(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              FlatButton(
-                child: Icon(
-                  MdiIcons.recordRec,
-                  size: size / 2,
-                  color: Colors.red,
-                ),
-                onPressed: () async {
-                  await audioHandler.stopRecording();
-                  _isRecording = false;
-                  await loadExistingAudio();
-                },
-              ),
-              Text("Tap to stop recording.")
-            ],
-          ),
-        );
-      }
-      if (_audioLoaded) {
-        bodyWidget = showAudioList();
+        bodyWidget = getWhileRecordingWidget(context);
       } else {
-        bodyWidget = showProgressWithLabel();
+        if (_audioLoaded) {
+          bodyWidget = getAudioListWidget(context);
+        } else {
+          bodyWidget = getProgressWithLabelWidget();
+        }
       }
     }
 
@@ -135,46 +126,120 @@ class _AudioRecorderViewState extends State<AudioRecorderView>
         title: Text("Audio Recorder/Playback"),
       ),
       body: bodyWidget,
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          String trackName =
-              "Track_${Utils.DATE_TS_FORMATTER.format(DateTime.now())}";
-          var audioName = await Utils.showInputDialog(
-            context,
-            "Record new audio",
-            "Please enter a name for the new recording",
-            defaultText: trackName,
-          );
-          if (audioName != null && audioName.isNotEmpty) {
-            audioHandler.startRecording(context, audioName);
-          }
-          setState(() {
-            _isRecording = true;
-          });
-        },
-        child: Icon(MdiIcons.recordRec),
+      floatingActionButton: !_isRecording
+          ? FloatingActionButton(
+              backgroundColor: Colors.red,
+              onPressed: () async {
+                // prompt the user for a name for the recorded sample, proposing a timestamp based
+                String trackName =
+                    "Track_${Utils.DATE_TS_FORMATTER.format(DateTime.now())}";
+                var audioName = await Utils.showInputDialog(
+                  context,
+                  "Record new audio",
+                  "Please enter a name for the new recording",
+                  defaultText: trackName,
+                );
+                if (audioName != null && audioName.isNotEmpty) {
+                  audioHandler.startRecording(context, audioName);
+                }
+                setState(() {
+                  _isRecording = true;
+                });
+              },
+              child: Icon(MdiIcons.recordRec),
+            )
+          : null,
+    );
+  }
+
+  /// Build the widget used during recording (featuring the stop button).
+  Widget getWhileRecordingWidget(BuildContext context) {
+    var size = math.min(
+        MediaQuery.of(context).size.width, MediaQuery.of(context).size.height);
+    return Center(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FlatButton(
+            child: Icon(
+              MdiIcons.recordRec,
+              size: size / 2,
+              color: Colors.red,
+            ),
+            onPressed: () async {
+              await stopRecordingOnTap();
+            },
+          ),
+          FlatButton(
+            child: Text("Tap to stop recording."),
+            onPressed: () async {
+              await stopRecordingOnTap();
+            },
+          )
+        ],
       ),
     );
   }
 
-  Widget showAudioList() {
-    return ListView.builder(
-      itemCount: _audioList.length,
-      itemBuilder: (BuildContext context, int index) {
-        var audioInfo = _audioList[index];
+  Future stopRecordingOnTap() async {
+    await audioHandler.stopRecording();
+    _isRecording = false;
+    await loadExistingAudio();
+  }
 
-        return ListTile(
-          leading: Icon(MdiIcons.waveform),
-          title: Text(audioInfo.name),
-          subtitle: audioInfo.duration > 0
-              ? Text(Utils.formatDurationMillis(audioInfo.duration))
-              : Text(""),
-        );
-      },
+  /// Build the widget containing the list of existing audio samples for playback.
+  Widget getAudioListWidget(BuildContext context) {
+    if (newRecordingName == null) {
+      newRecordingName =
+          "Track_${Utils.DATE_TS_FORMATTER.format(DateTime.now())}.${ActiveMediaFormat().mediaFormat.extension}";
+    }
+
+    var outFilePath = p.join(outputFolder, newRecordingName);
+    final file = File(outFilePath);
+    file.createSync();
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Expanded(
+          flex: 1,
+          child: ListView.builder(
+            itemCount: _audioList.length,
+            itemBuilder: (BuildContext context, int index) {
+              AudioInfo audioInfo = _audioList[index];
+
+              var track = Track.fromFile(audioInfo.path,
+                  mediaFormat: ActiveMediaFormat().mediaFormat);
+
+              var soundPlayerUI = SoundPlayerUI.fromTrack(track);
+
+              return ListTile(
+                leading: Icon(
+                  MdiIcons.waveform,
+                  color: Colors.green,
+                  size: 64,
+                ),
+                title: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(
+                    audioInfo.name
+                        .substring(0, audioInfo.name.lastIndexOf('.')),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                subtitle: soundPlayerUI,
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
-  Widget showProgressWithLabel() {
+  Widget getProgressWithLabelWidget() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,

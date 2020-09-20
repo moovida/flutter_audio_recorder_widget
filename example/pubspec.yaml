@@ -28,7 +28,7 @@ dependencies:
     path: ../
 
   # LGPL 3.0
-  sounds: 1.0.0-beta13
+  sounds: ^0.9.3
 
   # BSD
   path_provider: ^1.6.5
