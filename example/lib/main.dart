@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_audio_recorder_widget/flutter_audio_recorder_widget.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import 'package:sounds/sounds.dart';
 
 void main() {
   runApp(MyApp());
@@ -116,7 +115,7 @@ List<List<String>> listAudioFiles(String parentPath) {
     nameAndPathList.sort((o1, o2) {
       String n1 = o1[1];
       String n2 = o2[1];
-      return n1.compareTo(n2);
+      return -n1.compareTo(n2);
     });
   } catch (e) {
     print(e);

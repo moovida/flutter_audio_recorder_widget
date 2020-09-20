@@ -102,6 +102,34 @@ class Utils {
       },
     );
   }
+
+  /// Confirm dialog using custom [title] and [prompt].
+  static Future<bool> showConfirmDialog(
+      BuildContext context, String title, String prompt,
+      {trueText: 'Yes', falseText: 'No'}) async {
+    return await showDialog<bool>(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text(title),
+            content: Text(prompt),
+            actions: <Widget>[
+              FlatButton(
+                onPressed: () {
+                  Navigator.pop(context, true);
+                },
+                child: Text(trueText),
+              ),
+              FlatButton(
+                onPressed: () {
+                  Navigator.pop(context, false);
+                },
+                child: Text(falseText),
+              )
+            ],
+          );
+        });
+  }
 }
 
 /// METHODS HERE BELOW ARE COPIED OVER FROM THE SOUNDS LIBRARY

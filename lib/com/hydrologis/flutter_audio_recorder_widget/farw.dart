@@ -70,7 +70,6 @@ class _AudioRecorderViewState extends State<AudioRecorderView>
   List<AudioInfo> _audioList;
   String errorMessage;
   bool _isRecording = false;
-  String newRecordingName;
   String outputFolder;
 
   _AudioRecorderViewState(this.audioHandler);
@@ -190,15 +189,6 @@ class _AudioRecorderViewState extends State<AudioRecorderView>
 
   /// Build the widget containing the list of existing audio samples for playback.
   Widget getAudioListWidget(BuildContext context) {
-    if (newRecordingName == null) {
-      newRecordingName =
-          "Track_${Utils.DATE_TS_FORMATTER.format(DateTime.now())}.${ActiveMediaFormat().mediaFormat.extension}";
-    }
-
-    var outFilePath = p.join(outputFolder, newRecordingName);
-    final file = File(outFilePath);
-    file.createSync();
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -212,13 +202,14 @@ class _AudioRecorderViewState extends State<AudioRecorderView>
               var track = Track.fromFile(audioInfo.path,
                   mediaFormat: ActiveMediaFormat().mediaFormat);
 
-              var soundPlayerUI = SoundPlayerUI.fromTrack(track);
+              var soundPlayerUI =
+                  SoundPlayerUI.fromTrack(track, key: Key(audioInfo.path));
 
               return ListTile(
                 leading: Icon(
                   MdiIcons.waveform,
                   color: Colors.green,
-                  size: 64,
+                  size: 32,
                 ),
                 title: Padding(
                   padding: const EdgeInsets.all(8.0),
@@ -231,6 +222,23 @@ class _AudioRecorderViewState extends State<AudioRecorderView>
                   ),
                 ),
                 subtitle: soundPlayerUI,
+                trailing: IconButton(
+                  icon: Icon(
+                    MdiIcons.trashCan,
+                    color: Colors.red,
+                  ),
+                  onPressed: () async {
+                    var doRemove = await Utils.showConfirmDialog(
+                        context,
+                        "REMOVE TRACK",
+                        "Are you sure you want to remove ${audioInfo.name}?");
+                    if (doRemove) {
+                      File(audioInfo.path).deleteSync();
+
+                      await loadExistingAudio();
+                    }
+                  },
+                ),
               );
             },
           ),
